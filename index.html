@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>감각의 고고학 2076: 잃어버린 향의 연대기</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --neon-blue: #00f3ff;
+            --bg-dark: #0a0c10;
+            --font-main: 'Pretendard', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-dark);
+            color: #e0e0e0; margin: 0; display: flex; flex-direction: column; align-items: center;
+        }
+
+        header { padding: 30px; text-align: center; border-bottom: 1px dashed var(--gold); width: 100%; }
+        header h1 { font-size: 1.5rem; color: var(--gold); margin: 0; letter-spacing: 2px; }
+        .sub-header { font-size: 0.9rem; color: var(--neon-blue); margin-top: 5px; }
+
+        /* 메인 게임 보드 */
+        #game-container {
+            position: relative; width: 600px; height: 850px;
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('main향로.png') no-repeat center/contain;
+            border: 2px solid var(--gold); border-radius: 15px;
+            margin-top: 20px; overflow: hidden; cursor: crosshair;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+        }
+
+        /* 작품 설명 버튼 (추가) */
+        #info-trigger-btn {
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+            background: rgba(0, 0, 0, 0.7); border: 1px solid var(--gold);
+            color: var(--gold); padding: 8px 15px; border-radius: 5px;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        #info-trigger-btn:hover { background: var(--gold); color: black; }
+
+        .hotspot {
+            position: absolute; width: 100%; left: 0; z-index: 5; transition: 0.5s;
+        }
+        .hotspot:hover { background: rgba(0, 243, 255, 0.1); box-shadow: inset 0 0 20px var(--neon-blue); }
+
+        #spot-phoenix { top: 0%; height: 18%; }
+        #spot-mountain { top: 18%; height: 32%; }
+        #spot-lotus { top: 50%; height: 25%; }
+        #spot-dragon { top: 75%; height: 25%; }
+
+        /* 팝업 모달 */
+        #popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        #popup-content {
+            position: relative; width: 85%; max-width: 750px;
+            background: #12151a; border-radius: 20px; border: 1px solid var(--neon-blue);
+            padding: 40px; text-align: center;
+        }
+
+        #popup-img { width: 100%; max-height: 350px; object-fit: contain; border-radius: 10px; margin-bottom: 20px; border: 1px solid #333; }
+        #caption-title { color: var(--gold); font-size: 1.4rem; margin-bottom: 10px; }
+        #speculative-question { font-size: 1.2rem; color: var(--neon-blue); margin: 20px 0; line-height: 1.6; }
+        #result-text { font-size: 1rem; line-height: 1.7; color: #aaa; margin-top: 20px; display: none; padding: 15px; border-top: 1px solid #333; }
+        
+        .choice-group { display: flex; justify-content: center; gap: 15px; margin-top: 30px; }
+        .choice-btn {
+            padding: 12px 25px; border-radius: 5px; font-weight: bold; cursor: pointer;
+            background: transparent; border: 1px solid var(--gold); color: var(--gold); transition: 0.3s;
+        }
+        .choice-btn:hover { background: var(--gold); color: black; }
+        
+        .action-btn {
+            padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; border: none; margin-top: 20px;
+        }
+        #sound-btn { background: var(--neon-blue); color: #000; }
+        #close-btn { background: #333; color: white; margin-left: 10px; }
+
+        /* 작품 설명 내용 스타일 */
+        .info-body { text-align: justify; line-height: 1.8; color: #ccc; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+    <h1>ARCHIVE 2076: THE LOST SCENT</h1>
+    <div class="sub-header">[미래 감각 수집가 시스템 접속 중...]</div>
+</header>
+        
+
+<div id="game-container">
+    <button id="info-trigger-btn" onclick="openInfo()">아카이브 가이드</button>
+    <div id="spot-phoenix" class="hotspot" onclick="openPopup(4)"></div>
+    <div id="spot-mountain" class="hotspot" onclick="openPopup(3)"></div>
+    <div id="spot-lotus" class="hotspot" onclick="openPopup(2)"></div>
+    <div id="spot-dragon" class="hotspot" onclick="openPopup(1)"></div>
+</div>
+
+<div id="popup-overlay">
+    <div id="popup-content">
+        <div id="dynamic-content-area">
+            <img id="popup-img" src="" alt="감각 데이터 시각화">
+            <div id="caption-title"></div>
+            <div id="speculative-question"></div>
+            
+            <button id="sound-btn" class="action-btn" onclick="playCurrentSound()">사운드 신호 해독 (Play Soundscape)</button>
+
+            <div class="choice-group" id="choices"></div>
+            <div id="result-text"></div>
+        </div>
+        
+        <button id="close-btn" class="action-btn" onclick="closePopup()">로그 닫기</button>
+    </div>
+</div>
+
+<audio id="sensory-audio"></audio>
+
+<script>
+
+    function speakText(text) {
+    // 이전 음성을 중단 (중복 재생 방지)
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US'; // 영어로 설정 (한국어는 'ko-KR')
+    utterance.rate = 1;       // 속도
+    window.speechSynthesis.speak(utterance);
+}
+
+
+    const archiveData = {
+        1: {
+            title: "LEVEL 1: [용 & 하부] 지면의 진동",
+            question: "데이터 너머로 묵직한 베이스 드론이 들립니다. 이 '흙의 진동'은 무엇을 의미할까요?",
+            choices: ["2076: 물리적 균형을 위한 하중 지지 데이터", "2026: 대지로부터 차오르는 원초적 생명력"],
+            results: [
+                "분석 실패: 단순 하중 데이터로는 용의 역동적인 곡선을 설명할 수 없습니다. 감각의 깊이가 누락되었습니다.",
+                "복원 성공: 맞습니다. 2026년의 인류는 발밑의 흙에서 생존의 에너지를 느꼈습니다. 신경망에 원초적 활력이 주입됩니다."
+            ],
+            audioFile: "Beneath_the_Roots.mp4",
+            img: "dragon.png"
+        },
+        2: {
+            title: "LEVEL 2: [연꽃 & 몸체] 입자의 정화",
+            question: "맑은 싱잉볼 주파수가 감지됩니다. 왜 매끄러운 연꽃잎 위에서 향을 피웠을까요?",
+            choices: ["2076: 공기 질 개선을 위한 화학적 탈취", "2026: 내면의 혼탁함을 씻어내는 마음의 필터"],
+            results: [
+                "미완성 복원: 화학적 기능성만으로는 입자가 그리는 우아한 곡선을 복구할 수 없습니다.",
+                "복원 성공: 정확합니다. 연꽃은 진흙 속에서도 더럽혀지지 않는 정화를 상징했습니다. 데이터 오염이 12% 감소합니다."
+            ],
+            audioFile: "Smoke_from_the_Bronze_Burner.mp4",
+            img: "lotus.png"
+        },
+        3: {
+            title: "LEVEL 3: [삼신산 & 뚜껑] 초월의 지평",
+            question: "백제금의 선율과 12개의 구멍이 보입니다. 이 무릉도원의 향기는 무엇이었을까요?",
+            choices: ["2076: 시각 정보를 보조하는 후각 증강 현실", "2026: 감각이 확장된 이상세계로의 사유"],
+            results: [
+                "분석 실패: 증강 현실 알고리즘으로는 이 산세의 철학적 무게감을 담아낼 수 없습니다.",
+                "복원 성공: 이곳은 도피처가 아닌, 인간의 정신이 도달할 수 있는 최고의 '균형점'이었습니다. 로그 분석 완료."
+            ],
+            audioFile: "Bronze_Horizon.mp4",
+            img: "mountain.png"
+        },
+        4: {
+            title: "LEVEL 4: [봉황 & 정점] 영원한 정적",
+            question: "긴 여운 끝에 모든 소리가 멈췄습니다. 이 '비움'은 우리에게 무엇을 의미합니까?",
+            choices: ["2076: 프로세스 종료 및 데이터 소멸", "2026: 절대적 평화와 무한한 가능성의 완성"],
+            results: [
+                "시스템 경고: 소멸로 해석할 경우 아카이브 자체가 삭제됩니다. 존재의 의미를 찾지 못했습니다.",
+                "완벽한 복원: 비움은 끝이 아닌 모든 것이 채워질 수 있는 '휴마톨로지'의 정점입니다. 인류의 온기가 복원되었습니다."
+            ],
+            audioFile: "Sandalwood_Bloom.mp4",
+            img: "phoenix.png"
+        }
+    };
+
+    const audioPlayer = document.getElementById('sensory-audio');
+    let currentStage = null;
+
+    function openInfo() {
+        const dynamicArea = document.getElementById('dynamic-content-area');
+        dynamicArea.innerHTML = `
+            <h2 style="color:var(--gold)">감각의 고고학 2076</h2>
+            <div class="info-body">
+                <h3 style="color:var(--neon-blue); font-size:1.1rem;">[작품 소개]</h3>
+                모든 감각이 디지털 코드로 치환된 2076년, 인류는 더 이상 '향기'와 '질감'을 알지 못합니다. 
+                교수 조준동(趙浚東)의 <b>휴마톨로지(Humartology)</b> 철학에 기반한 이 아카이브는 백제 금동대향로를 통해 기술이 놓친 인간의 본질을 복원하려 합니다.
+                당신은 미래의 '감각 수집가'가 되어 사운드스케이프를 해독하고, 잃어버린 생명력, 정화, 그리고 '비움'의 가치를 찾아내야 합니다.
+            </div>
+            <div class="info-body" style="border-bottom: 1px solid #333; padding-bottom: 15px;">
+                <h3 style="color:var(--neon-blue); font-size:1.1rem;">[사용법]</h3>
+                1. 메인 화면의 향로 각 부위(봉황, 산, 연꽃, 용)를 클릭하여 감각 데이터에 접속합니다.<br>
+                2. <b>'사운드 신호 해독'</b> 버튼을 눌러 각 부위가 상징하는 사운드스케이프를 청취합니다.<br>
+                3. 미래(2076)와 과거(2026)의 관점 중, 인간의 본질을 담은 올바른 해석을 선택하여 데이터를 복원하십시오.
+            </div>
+
+            <div class="info-body" style="font-size: 0.95rem;">
+                <h3 style="color:var(--neon-blue); font-size:1.1rem;">[작가 소개]</h3>
+                <b>조준동 (趙浚東, Jun-Dong Cho)</b><br>
+                성균관대학교 명예교수 및 국가인권위원회 위원.
+                인간(Human), 예술(Art), 기술(Tech)의 융합을 다루는 <b>휴마톨로지</b> 개념을 창시하였으며,
+                시각 장애인을 위한 다감각 예술 감상 보조 기술 등 기술의 사회적 책임과 인간 중심 설계를 연구하고 있습니다.
+            </div>
+
+            <div style="margin-top: 25px; font-size: 0.85rem; color: #666; letter-spacing: 1px;">
+                COPYRIGHT © 2026 JUN-DONG CHO. ALL RIGHTS RESERVED.
+            </div>
+
+        `;
+        document.getElementById('close-btn').style.display = 'inline-block';
+        document.getElementById('popup-overlay').style.display = 'flex';
+    }
+
+    function openPopup(stage) {
+        currentStage = archiveData[stage];
+        const dynamicArea = document.getElementById('dynamic-content-area');
+        
+        dynamicArea.innerHTML = `
+            <img id="popup-img" src="${currentStage.img}" alt="감각 데이터 시각화">
+            <div id="caption-title">${currentStage.title}</div>
+            <div id="speculative-question">${currentStage.question}</div>
+            <button id="sound-btn" class="action-btn" onclick="playCurrentSound()">사운드 신호 해독 (Play Soundscape)</button>
+            <div class="choice-group" id="choices"></div>
+            <div id="result-text"></div>
+        `;
+        
+        const choiceContainer = document.getElementById('choices');
+        currentStage.choices.forEach((choice, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = choice;
+            btn.onclick = () => selectChoice(index);
+            choiceContainer.appendChild(btn);
+        });
+
+        document.getElementById('close-btn').style.display = 'none';
+        document.getElementById('popup-overlay').style.display = 'flex';
+        audioPlayer.src = currentStage.audioFile;
+    }
+
+    function playCurrentSound() {
+        audioPlayer.play();
+    }
+
+    function selectChoice(index) {
+        const resultBox = document.getElementById('result-text');
+        resultBox.innerText = currentStage.results[index];
+        resultBox.style.display = 'block';
+        
+        if (index === 1) {
+            resultBox.style.color = 'var(--neon-blue)';
+        } else {
+            resultBox.style.color = '#ff4500';
+        }
+        document.getElementById('close-btn').style.display = 'inline-block';
+    }
+
+    function closePopup() {
+        document.getElementById('popup-overlay').style.display = 'none';
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+    }
+</script>
+</body>
+</html>
