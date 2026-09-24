@@ -209,12 +209,7 @@ https://github.com/jdcho0721/Incense-Burner
 
 ✉ jdcho@skku.edu · 🌐 [blog.naver.com/humartology](https://blog.naver.com/humartology)
 
-### 도와주신 분 / Contributors
 
-| 역할 | 이름 | 소속 |
-|---|---|---|
-| Virtual Archaeology & Tactile Production Director | **김호용** | (주)위프코 대표 |
-| Accessibility Consultant & Barrier-Free Supervisor | **육근해** | 장애인문화복지연구소 대표 |
 
 ## 라이선스 / License
 
